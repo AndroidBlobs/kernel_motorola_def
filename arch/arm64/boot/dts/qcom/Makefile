@@ -1,3 +1,113 @@
+ifeq ($(CONFIG_MMI_DEVICE_DTBS),y)
+ifneq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
+	$(error Pippen DT w/o overlay is undefined!!!)
+endif
+
+# Add 1k of padding to the DTBs to allow for environment variables
+# to be runtime added by the bootloader (i.e. /chosen properties)
+DTC_FLAGS += -p 1024
+
+dtbo-$(CONFIG_FOLES_DTB) += \
+	sm6150-foles-evt1-overlay.dtbo \
+	sm6150-foles-evt2-overlay.dtbo \
+	sm6150-foles-evt3-overlay.dtbo \
+	sm6150-foles-dvt1-overlay.dtbo \
+	sm6150-foles-dvt1a-overlay.dtbo \
+	sm6150-foles-dvt1b-overlay.dtbo \
+	sm6150-foles-dvt2a-overlay.dtbo \
+	sm6150-foles-dvt2b-overlay.dtbo \
+	sm6150-foles-pvt-overlay.dtbo \
+	sm6150-foles_npi-evt1-overlay.dtbo \
+	sm6150-foles_npi-evt3-overlay.dtbo \
+	sm6150-foles_npi-dvt1-overlay.dtbo \
+	sm6150-foles_npi-dvt2a-overlay.dtbo \
+	sm6150-foles_npi-dvt2b-overlay.dtbo
+
+dtbo-$(CONFIG_PARKER_DTB) += \
+	sm6150-parker-evt1-overlay.dtbo \
+	sm6150-parker-dvt1a-overlay.dtbo \
+	sm6150-parker-dvt1b-overlay.dtbo \
+	sm6150-parker-dvt2a-overlay.dtbo \
+	sm6150-parker-dvt2b-overlay.dtbo
+
+dtbo-$(CONFIG_DEF_DTB) += \
+	sm6150-def-evt1-overlay.dtbo \
+	sm6150-def-pvt-overlay.dtbo
+
+dtbo-$(CONFIG_QTPRO_DTB) += \
+	sm6150-qtpro-evt1-overlay.dtbo \
+	sm6150-qtpro-evt2-overlay.dtbo
+
+sm6150-foles-evt1-overlay.dtbo-base := \
+	sm6150-foles-base.dtb
+
+sm6150-foles-evt2-overlay.dtbo-base := \
+	sm6150-foles-base.dtb
+
+sm6150-foles-evt3-overlay.dtbo-base := \
+	sm6150-foles-base.dtb
+
+sm6150-foles-dvt1-overlay.dtbo-base := \
+	sm6150-foles-base.dtb
+
+sm6150-foles-dvt1a-overlay.dtbo-base := \
+	sm6150-foles-base.dtb
+
+sm6150-foles-dvt1b-overlay.dtbo-base := \
+	sm6150-foles-base.dtb
+
+sm6150-foles-dvt2a-overlay.dtbo-base := \
+	sm6150-foles-base.dtb
+
+sm6150-foles-dvt2b-overlay.dtbo-base := \
+	sm6150-foles-base.dtb
+
+sm6150-foles-pvt-overlay.dtbo-base := \
+	sm6150-foles-base.dtb
+
+sm6150-foles_npi-evt1-overlay.dtbo-base := \
+	sm6150-foles_npi-base.dtb
+
+sm6150-foles_npi-evt3-overlay.dtbo-base := \
+	sm6150-foles_npi-base.dtb
+
+sm6150-foles_npi-dvt1-overlay.dtbo-base := \
+	sm6150-foles_npi-base.dtb
+
+sm6150-foles_npi-dvt2a-overlay.dtbo-base := \
+	sm6150-foles_npi-base.dtb
+
+sm6150-foles_npi-dvt2b-overlay.dtbo-base := \
+	sm6150-foles_npi-base.dtb
+
+sm6150-parker-evt1-overlay.dtbo-base := \
+	sm6150-parker-base.dtb
+
+sm6150-parker-dvt1a-overlay.dtbo-base := \
+	sm6150-parker-base.dtb
+
+sm6150-parker-dvt1b-overlay.dtbo-base := \
+	sm6150-parker-base.dtb
+
+sm6150-parker-dvt2a-overlay.dtbo-base := \
+	sm6150-parker-base.dtb
+
+sm6150-parker-dvt2b-overlay.dtbo-base := \
+	sm6150-parker-base.dtb
+
+sm6150-def-evt1-overlay.dtbo-base := \
+	sm6150-def-base.dtb
+
+sm6150-def-pvt-overlay.dtbo-base := \
+	sm6150-def-base.dtb
+
+sm6150-qtpro-evt1-overlay.dtbo-base := \
+	sm6150-qtpro-base.dtb
+
+sm6150-qtpro-evt2-overlay.dtbo-base := \
+	sm6150-qtpro-base.dtb
+
+else
 # SPDX-License-Identifier: GPL-2.0
 dtb-$(CONFIG_ARCH_QCOM)	+= apq8016-sbc.dtb
 dtb-$(CONFIG_ARCH_QCOM)	+= apq8096-db820c.dtb
@@ -25,7 +135,9 @@ dtb-$(CONFIG_ARCH_QCS405) += qcs405-iot-sku1.dtb \
 		qcs407-iot-sku6.dtb \
 		qcs407-iot-sku9.dtb \
 		qcs405-iot-sku12.dtb \
-		qcs407-iot-sku12.dtb
+		qcs407-iot-sku12.dtb \
+		qcs405-iot-sku13.dtb \
+		qcs407-iot-sku13.dtb
 
 ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
 	dtbo-$(CONFIG_ARCH_SM8150) += \
@@ -283,6 +395,8 @@ dtb-$(CONFIG_ARCH_SDXPRAIRIE) += sdxprairie-rumi.dtb \
 	sa515m-ccard.dtb \
 	sa515m-ccard-pcie-ep.dtb \
 	sa515m-ccard-usb-ep.dtb
+
+endif  #CONFIG_MMI_DEVICE_DTBS
 
 ifeq ($(CONFIG_ARM64),y)
 always		:= $(dtb-y)
