@@ -2,6 +2,46 @@
 # QCOM Soc drivers
 #
 menu "Qualcomm SoC drivers"
+config MMI_DEVICE_DTBS
+	depends on ARCH_QCOM
+	default n
+	bool "Motorola Mobility Device DTBs"
+	help
+		Only include Motorola device specific DTBs to limit the number that
+		get built during kernel compilation.
+
+config FOLES_DTB
+	depends on ARCH_QCOM
+	default n
+	bool "Foles DTBs"
+	help
+	  Only include Foles specific DTBs to limit the number that
+	  get built during kernel compilation.
+
+config PARKER_DTB
+	depends on ARCH_QCOM
+	default n
+	bool "Parker DTBs"
+	help
+	  Only include Parker specific DTBs to limit the number that
+	  get built during kernel compilation.
+
+config DEF_DTB
+	depends on ARCH_QCOM
+	default n
+	bool "Def DTBs"
+	help
+	  Only include Def specific DTBs to limit the number that
+	  get built during kernel compilation.
+
+config QTPRO_DTB
+	depends on ARCH_QCOM
+	default n
+	bool "Qtpro DTBs"
+	help
+	  Only include Qtpro specific DTBs to limit the number that
+	  get built during kernel compilation.
+
 config QCOM_MEM_OFFLINE
 	bool "Dynamic Memory Region Offline driver"
 	help
@@ -830,6 +870,7 @@ endif # MSM_PM
 
 source "drivers/soc/qcom/memshare/Kconfig"
 source "drivers/soc/qcom/hab/Kconfig"
+source "drivers/soc/qcom/rmnet_ctl/Kconfig"
 
 config MSM_PERFORMANCE
 	tristate "msm performance driver to support userspace fmin/fmax request"
