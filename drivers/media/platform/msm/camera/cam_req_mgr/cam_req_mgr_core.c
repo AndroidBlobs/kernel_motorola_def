@@ -356,7 +356,8 @@ static void __cam_req_mgr_reset_req_slot(struct cam_req_mgr_core_link *link,
 
 	/* Check if CSL has already pushed new request*/
 	if (slot->status == CRM_SLOT_STATUS_REQ_ADDED ||
-		in_q->last_applied_idx == idx)
+		in_q->last_applied_idx == idx ||
+		idx < 0)
 		return;
 
 	/* Reset input queue slot */
@@ -1096,26 +1097,6 @@ static int __cam_req_mgr_check_sync_req_is_ready(
 				sync_link->link_hdl);
 			link->sync_link_sof_skip = true;
 		}
-	} else if ((sync_link->sof_timestamp > 0) &&
-		(link->sof_timestamp < sync_link->sof_timestamp) &&
-		(sync_link->sof_timestamp - link->sof_timestamp <
-		sync_frame_duration / 5) &&
-		(sync_rd_slot->sync_mode == CAM_REQ_MGR_SYNC_MODE_SYNC)) {
-
-		/*
-		 * There is a timing issue once enter this condition,
-		 * it means link receives the SOF event earlier than
-		 * sync link in IFE CSID side, but the process in CRM
-		 * is sync_link earlier than link, then previous SOF
-		 * event of sync link is skipped, so we also need to
-		 * skip this SOF event.
-		 */
-		if (req_id >= sync_req_id) {
-			CAM_DBG(CAM_CRM,
-				"Timing issue, the sof event of link %x is delayed",
-				link->link_hdl);
-			return -EAGAIN;
-		}
 	}
 
 	CAM_DBG(CAM_REQ,
@@ -1310,10 +1291,6 @@ static int __cam_req_mgr_process_req(struct cam_req_mgr_core_link *link,
 			if (slot->req_id > 0) {
 				last_app_idx = in_q->last_applied_idx;
 				in_q->last_applied_idx = idx;
-				if (abs(last_app_idx - idx) >=
-					reset_step + 1)
-					__cam_req_mgr_reset_req_slot(link,
-						last_app_idx);
 			}
 
 			__cam_req_mgr_dec_idx(
@@ -2036,6 +2013,7 @@ int cam_req_mgr_process_add_req(void *priv, void *data)
 	struct cam_req_mgr_req_tbl          *tbl = NULL;
 	struct cam_req_mgr_tbl_slot         *slot = NULL;
 	struct crm_task_payload             *task_data = NULL;
+	struct cam_req_mgr_core_session     *session;
 
 	if (!data || !priv) {
 		CAM_ERR(CAM_CRM, "input args NULL %pK %pK", data, priv);
@@ -2046,6 +2024,7 @@ int cam_req_mgr_process_add_req(void *priv, void *data)
 	link = (struct cam_req_mgr_core_link *)priv;
 	task_data = (struct crm_task_payload *)data;
 	add_req = (struct cam_req_mgr_add_request *)&task_data->u;
+	session = (struct cam_req_mgr_core_session *)link->parent;
 
 	for (i = 0; i < link->num_devs; i++) {
 		device = &link->l_dev[i];
@@ -2070,6 +2049,7 @@ int cam_req_mgr_process_add_req(void *priv, void *data)
 	 * 3. mark req_ready_map with this dev_bit.
 	 */
 
+	mutex_lock(&session->lock);
 	mutex_lock(&link->req.lock);
 	idx = __cam_req_mgr_find_slot_for_req(link->req.in_q, add_req->req_id);
 	if (idx < 0) {
@@ -2078,6 +2058,7 @@ int cam_req_mgr_process_add_req(void *priv, void *data)
 			add_req->req_id, device->dev_info.name, link->link_hdl);
 		rc = -EBADSLT;
 		mutex_unlock(&link->req.lock);
+		mutex_unlock(&session->lock);
 		goto end;
 	}
 
@@ -2117,6 +2098,7 @@ int cam_req_mgr_process_add_req(void *priv, void *data)
 		slot->state = CRM_REQ_STATE_READY;
 	}
 	mutex_unlock(&link->req.lock);
+	mutex_unlock(&session->lock);
 
 end:
 	return rc;
@@ -2226,6 +2208,7 @@ end:
 static int cam_req_mgr_process_trigger(void *priv, void *data)
 {
 	int                                  rc = 0;
+	int32_t                              idx = -1;
 	struct cam_req_mgr_trigger_notify   *trigger_data = NULL;
 	struct cam_req_mgr_core_link        *link = NULL;
 	struct cam_req_mgr_req_queue        *in_q = NULL;
@@ -2248,6 +2231,18 @@ static int cam_req_mgr_process_trigger(void *priv, void *data)
 	in_q = link->req.in_q;
 
 	mutex_lock(&link->req.lock);
+
+	if (trigger_data->trigger == CAM_TRIGGER_POINT_SOF &&
+		!link->sync_link) {
+		idx = __cam_req_mgr_find_slot_for_req(in_q,
+			trigger_data->req_id);
+		if (idx >= 0) {
+			if (idx == in_q->last_applied_idx)
+				in_q->last_applied_idx = -1;
+			__cam_req_mgr_reset_req_slot(link, idx);
+		}
+	}
+
 	/*
 	 * Check if current read index is in applied state, if yes make it free
 	 *    and increment read index to next slot.
@@ -2514,6 +2509,7 @@ static int cam_req_mgr_cb_notify_trigger(
 	notify_trigger->link_hdl = trigger_data->link_hdl;
 	notify_trigger->dev_hdl = trigger_data->dev_hdl;
 	notify_trigger->trigger = trigger_data->trigger;
+	notify_trigger->req_id = trigger_data->req_id;
 	notify_trigger->sof_timestamp_val = trigger_data->sof_timestamp_val;
 	task->process_cb = &cam_req_mgr_process_trigger;
 	rc = cam_req_mgr_workq_enqueue_task(task, link, CRM_TASK_PRIORITY_0);
