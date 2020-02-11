@@ -2850,6 +2850,16 @@ static int qseecom_unload_app(struct qseecom_dev_handle *data,
 		goto unload_exit;
 	}
 
+	if (!memcmp(data->client.app_name, "prov", strlen("prov"))) {
+		pr_debug("Do not unload prov app from tz\n");
+		goto unload_exit;
+	}
+
+	if (!memcmp(data->client.app_name, "prov", strlen("prov"))) {
+		pr_debug("Do not unload prov app from tz\n");
+		goto unload_exit;
+	}
+
 	__qseecom_cleanup_app(data);
 	__qseecom_reentrancy_check_if_no_app_blocked(TZ_OS_APP_SHUTDOWN_ID);
 
@@ -7641,6 +7651,13 @@ static long qseecom_ioctl(struct file *file,
 		break;
 	}
 	case QSEECOM_IOCTL_APP_LOADED_QUERY_REQ: {
+		if ((data->type != QSEECOM_GENERIC) &&
+			(data->type != QSEECOM_CLIENT_APP)) {
+			pr_err("app loaded query req: invalid handle (%d)\n",
+								data->type);
+			ret = -EINVAL;
+			break;
+		}
 		data->type = QSEECOM_CLIENT_APP;
 		mutex_lock(&app_access_lock);
 		atomic_inc(&data->ioctl_count);
